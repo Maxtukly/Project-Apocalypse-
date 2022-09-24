@@ -8,6 +8,6 @@ class Menu:
         self.printed = ''
         self.times = 0
         
-    def start_menu_loading(self, time):
+    #def start_menu_loading(self, time):
         
         
