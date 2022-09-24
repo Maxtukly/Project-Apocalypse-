@@ -2,19 +2,27 @@ from turtle import width
 import pygame as p
 import pyautogui
 
-width, height = pyautogui.size()
-
 from background import BackGround
-
-
 from character import Character
+from menu import Menu
+
+
 
 
 p.init()
+width, height = pyautogui.size()
 screen = p.display.set_mode([width, height])
-
+clock = p.time.Clock()
 background = BackGround(p, 'hello from bg')
 character = Character(p, 'hello from chaacter')
+menu = Menu(p, screen)
+
+FPS = 30
+
+
+
+
+
 
 screen.fill((0, 0, 0))
 change = 0
@@ -26,15 +34,10 @@ while running:
         if event.type == p.QUIT:
             running = False
 
-    if change == 0:
-        screen.fill((255,255,255))
-        change = 1
-    else: 
-        screen.fill((0,0,0))
-        change = 0
 
 
-    p.display.flip()
 
+    p.display.update()
+    clock.tick(FPS)
 p.quit()
 
