@@ -1,4 +1,3 @@
-from turtle import width
 import pygame as p
 import pyautogui
 
