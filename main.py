@@ -1,10 +1,11 @@
 import pygame as p
 import pyautogui
+import os
 
 from background import BackGround
 from character import Character
 from menu import Menu
-
+from upload import Upload
 
 
 
@@ -18,7 +19,9 @@ menu = Menu(p, screen)
 
 FPS = 30
 
-
+######Loading######
+upld = Upload(p, os)
+ground_textures = upld.upload_textures(filepath="./sprites/textures/ground_textures/")
 
 
 
