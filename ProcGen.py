@@ -3,178 +3,292 @@ import tkinter
 import random
 import pickle
 import copy
-import sys
-'''B - створити світ, в консолі треба ввести розміри трьох островів
-S - зберігає карту
-L - загружає карту(well yes, but actualy yes)
-C - очищує карту
-Q - вихід'''
+import math
+'''B - create world
+S - save world
+L - load world 
+C - clean map'''
+
 
 pygame.init()
 p = pygame
+m = math
 tk = tkinter.Tk()
-s = sys
 
-Loadw = None
-
-x = tk.winfo_screenwidth()
-y = tk.winfo_screenheight()
-
-num = int(input("Number of islands: "))
-inpworsize = int(input("World size: ")) #Розмір світу який вводить гравець, максимум 20
-worldsize = 21 - inpworsize
-"""розмір клітинок, чим більше вводять - тим менше клітинки, 
-чим менше клітинки - тим більше влізе, а значить світ більше"""
-k = 0
-
-if worldsize <= 0:
-    print("To big, setting max world size...")
-    worldsize = 1
-
-screen = p.display.set_mode((x, y))
+x = 500
+y = 500
+screen = None
 color_e = (0, 100, 0)
 color_ws = (0, 75, 100)
 color_w = (0, 0, 100)
-zk = [] # зайняті позиціїї
+rmcords = [0, 0]
+zk = []  # зайняті позиціїї
+listforocean = []
+
+# Just buffer for comfort
+
+
+class Buffer:
+    def __init__(self):
+        self.worldsize = 0
+        self.map = []
+        self.file = None
+        self.name = ""
+
+
+Loadw = Buffer()
+
 
 class UCube:
-    def __init__(self, co, color, type):
-            self.color = color
-            self.cords = co
-            self.type = type
+    def __init__(self, co, color, gtype, world):
+        self.color = color
+        self.cords = co
+        self.size = world.worldsize
+        self.suportcords = copy.deepcopy(self.cords)
+        self.stopcords = [self.suportcords[0] + world.worldsize, self.suportcords[1] + world.worldsize]
+        self.surfacex = range(self.suportcords[0], self.stopcords[0])
+        self.surfacey = range(self.suportcords[1], self.stopcords[1])
+        self.type = gtype
 
     def draw(self):
-        r = p.Rect(self.cords[0], self.cords[1], worldsize, worldsize)
+        r = p.Rect(self.cords[0], self.cords[1], self.size, self.size)
         p.draw.rect(screen, self.color, r, 0)
 
-class World():
+
+class Island:
+    def __init__(self, size, world):
+
+        # all needed variables for island generation
+
+        self.size = size
+        self.world  = world
+
+    def birth(self):
+        n = True
+        global x
+        global y
+        xx = copy.deepcopy(x)
+        yy = copy.deepcopy(y)
+        seq = [self.world.worldsize, -self.world.worldsize, 0]
+        seq10 = [self.world.worldsize, -self.world.worldsize]
+        px = random.randrange(60, xx, self.world.worldsize)
+        py = random.randrange(60, yy, self.world.worldsize)
+        zkl = []
+
+        # Main loop\core of island building
+
+        while n is True:
+            xc = px + random.choice(seq)
+            if xc > xx:
+                return
+            yc = py + random.choice(seq)
+            if yc > yy:
+                return
+            if xc == px and yc == py:
+                rn = random.randint(0, 1)
+                if rn == 0:
+                    xc = xc + random.choice(seq10)
+                if rn == 1:
+                    yc = yc + random.choice(seq10)
+
+            prcord = [xc, yc]
+            px = xc
+            py = yc
+            if prcord in listforocean:
+                print("Ops")
+            else:
+                smthng = UCube(prcord, color_e, "Earth", Loadw)
+                listforocean.append(prcord)
+                zk.append(smthng)
+                zkl.append(smthng)
+            if len(zkl) >= self.size:
+                n = False
+
+        # Filling gaps and creating shore
+
+    def fill(self):
+        zkxp = []
+        for u in zk:
+            cc = u.cords
+            zkxp.append(cc)
+        zkx = copy.deepcopy(zk)
+        zx = copy.deepcopy(zk)
+        zky = copy.deepcopy(zk)
+        zy = copy.deepcopy(zk)
+        for g in zkx:
+            g.cords[0] += self.world.worldsize
+            if g.cords not in zkxp:
+                print("nope", g.cords)
+                smtn = UCube(g.cords, color_ws, "Shore", self.world)
+                zk.append(smtn)
+                listforocean.append(g.cords)
+        for g in zx:
+            g.cords[0] -= self.world.worldsize
+            if g.cords not in zkxp:
+                print("nope", g.cords)
+                smtn = UCube(g.cords, color_ws, "Shore", self.world)
+                zk.append(smtn)
+                listforocean.append(g.cords)
+        for g in zky:
+            g.cords[1] += self.world.worldsize
+            if g.cords not in zkxp:
+                print("nope", g.cords)
+                smtn = UCube(g.cords, color_ws, "Shore", self.world)
+                zk.append(smtn)
+                listforocean.append(g.cords)
+        for g in zy:
+            g.cords[1] -= self.world.worldsize
+            if g.cords not in zkxp:
+                print("nope", g.cords)
+                smtn = UCube(g.cords, color_ws, "Shore", self.world)
+                zk.append(smtn)
+                listforocean.append(g.cords)
+
+    def spawn(self):
+        self.birth()
+        self.fill()
+
+
+
+class World:
     def __init__(self):
-        self.name = input("Name of world:")
-        self.size = worldsize
-        self.file = "World-" + self.name + ".obj"
+
+        # Really valuable stuff\needed variables for code to work
+
+        self.num = 5
+        inpworsize = (input("World size: "))  # Inputting world size
+        self.worldsize = 15
+
+        # Declairing size of world
+
+        if inpworsize == "Tiny":
+            self.worldsize = 20
+        elif inpworsize == "Small":
+            self.worldsize = 15
+        elif inpworsize == "Medium":
+            self.worldsize = 10
+        elif inpworsize == "Big":
+            self.worldsize = 5
+
+        """actually size of squares, smaller squares = more spase for another squares, so world
+        is bigger"""
+
+        # Main data of world in global perspective, I mean name of file and actual world
+
+        self.name = str(input("Worlds name: "))
+        self.file = "World-" + str(self.name) + ".obj"
         self.loaded = False
+        self.map = None
 
-def spawn_island(size, xx, yy):
-    # створення світу
-    n = True
-    # color_w = (random.randint(0, 100), random.randint(0, 100), random.randint(0, 100))
-    seq = [worldsize, -worldsize, 0]
-    seq10 = [worldsize, -worldsize]
-    px = random.randrange(60, xx, worldsize)
-    py = random.randrange(60, yy, worldsize)
-    zkl = []
-    while px in zk:
-        px = random.randint(20, 1180)
-    while py in zk:
-        py = random.randint(20, 780)
-    while n is True:
-        x = px + random.choice(seq)
-        if x > xx:
-            return
-        y = py + random.choice(seq)
-        if y > yy:
-            return
+    def spawn_ocean(self):
 
-        prcord = [x, y]
-        px = x
-        py = y
-        if prcord in zk and prcord in zkl:
-            pass
-        else:
-            smthng = UCube(prcord, color_ws, "Shore")
-            zk.append(smthng)
-            zkl.append(smthng)
-        if len(zkl) >= size:
-            n = False
-    print()
+        # Spawning of ocean
 
-def fill():
-    # заповнення непотрібних участків
-    zkx = copy.deepcopy(zk)
-    zky = copy.deepcopy(zk)
-    tim = 0
-    for g in zkx:
-        g.cords[0] += worldsize
-        if g not in zk:
-            tim += 1
-            print("nope", tim, g.cords)
-            smtn = UCube(g.cords, color_e, "Earth")
-            zk.append(smtn)
+        xo = 0
+        yo = 0
+        while True:
+            if yo >= y:
+                break
+            ok = [xo, yo]
+            if ok not in listforocean:
+                smo = UCube(ok, color_w, "Ocean", self)
+                zk.append(smo)
+                print(ok)
+                print("spawn ocean", ok)
+            else:
+                print("Land", ok)
+            if xo >= x - self.worldsize:
+                yo += self.worldsize
+                xo = 0
+            else:
+                xo += self.worldsize
 
-def spawn_ocean():
-    ok = [0, 0]
-    ozk = []
-    for j in zk:
-        ozk.append(j.cords)
-    while True:
-        if ok[1] > y:
-            break
-        if ok not in ozk:
-            smo = UCube(ok, color_w, "Ocean")
-            zk.append(smo)
-            print("spawn ocean", ok)
-        else:
-            print("Land", ok)
-        if ok[0] >= x:
-            ok[1] += worldsize
-            ok[0] = 0
-        else:
-            ok[0] += worldsize
+    def creating(self):
+
+        # Initiation of creating
+
+        for rp in range(0, self.num):
+            y = Island(30, Loadw)
+            y.spawn()
+        self.spawn_ocean()
+        self.map = zk
+        for h in Loadw.map:
+            h.draw()
 
 
 def save():
-    # збереження карти
-    k = World()
-    zkk = copy.deepcopy(zk)
+    # saving
+    k = Loadw
     saving = open(k.file, "wb")
-    pickle.dump(zkk, saving)
+    pickle.dump(Loadw, saving)
     saving.close()
 
 
-def upload(map):
-    # завантаження карти з зберігання
-    for i in map:
+def upload(mmap):
+    # loading map from save
+    for i in mmap:
         i.draw()
 
-def clean(list):
-    for i in list:
-        del i
+
+def clean(llist):
+    for ir in llist:
+        ir.draw()
+        del ir
     screen.fill((0, 0, 0))
+    print(zk)
     print("Deleting complete")
 
+
 def load():
-    # завантаження збереження
+    # loading save
+    global Loadw
     nome = input("Name of world:")
     sav = open("World-" + nome + ".obj", "rb")
     s = pickle.load(sav)
-    upload(s)
+    Loadw = s
+    upload(s.map)
     sav.close()
 
 
-while True:
-    for i in p.event.get():
-        if i.type == p.QUIT:
-            p.quit()
-            sys.exit()
-        if i.type == pygame.KEYDOWN:
-            if i.key == p.K_b:
-                # побудова світу
-                for a in range(0, num):
-                    spawn_island(50, x, y)
-                    fill()
-                spawn_ocean()
-                for j in zk:
-                    j.draw()
-                print(zk)
-            if i.key == p.K_s:
-                save()
-            if i.key == p.K_l:
-                load()
-            if i.key == p.K_c:
-                clean(zk)
-            if i.key == p.K_q:
-                p.quit()
-                sys.exit()
-    pygame.display.update()
+"""def bug_destroyer():
+    for h in Loadw.map:
+        if h.type == "Bug":
+            Loadw.map.remove(h)"""
 
+
+def createworld():
+    # making world
+    global Loadw
+    Loadw = World()
+    Loadw.creating()
+
+
+def check(i):
+    # global rmcords
+    """if i.type == p.MOUSEBUTTONDOWN:
+        mousecords = p.mouse.get_pos()
+        click = p.mouse.get_pressed()
+        for i in Loadw.map:
+            if i.cords[0] + worldsize > mousecords[0] > i.cords[0] and i.cords[1] + worldsize > mousecords[1] > /
+            i.cords[1]:
+                if click[0] == 1:
+                    print(i.type)
+                    i.color = (60, 30, 10)
+                    if i.type == "Earth":
+                        i.color = (100, 63, 90)
+                    i.draw()
+                else:
+                    rmcords = [m.floor(mousecords[0] / 10) * 10, m.floor(mousecords[1] / 10) * 10]
+                    print(rmcords)
+                    fix()"""
+
+    if i.type == pygame.KEYDOWN:
+        if i.key == p.K_b:
+            createworld()
+        if i.key == p.K_s:
+            save()
+        if i.key == p.K_l:
+            load()
+        if i.key == p.K_c:
+            clean(zk)
 
