@@ -25,7 +25,7 @@ bg = pygame.image.load("sprites\Omega background fixed .png")
 bg = pygame.transform.scale(bg, (tk.winfo_screenwidth(), tk.winfo_screenheight() - 50))
 screen.blit(bg, (0, 0))
 
-pygame.mixer.music.load("sound\KoA menu theme vol.4")
+pygame.mixer.music.load("KoA menu theme vol.4")
 p.mixer.music.play()
 
 Allob = []
